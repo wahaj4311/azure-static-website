@@ -7,8 +7,6 @@ set -e
 RESOURCE_GROUP="static-web-rg"
 LOCATION="eastus"
 STORAGE_ACCOUNT="staticweb$(date +%s)"  # Unique name using timestamp
-CDN_PROFILE_NAME="static-web-cdn"
-CDN_ENDPOINT_NAME="static-web-endpoint"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -29,57 +27,25 @@ az storage account create \
     --location $LOCATION \
     --sku Standard_LRS \
     --kind StorageV2 \
-    --enable-https-traffic-only true \
-    --min-tls-version TLS1_2
+    --https-only true \
+    --min-tls-version TLS1_2 \
+    --allow-blob-public-access true
+
+# Get storage account key
+STORAGE_KEY=$(az storage account keys list \
+    --resource-group $RESOURCE_GROUP \
+    --account-name $STORAGE_ACCOUNT \
+    --query "[0].value" \
+    --output tsv)
 
 # Enable static website hosting
 echo -e "${BLUE}Enabling static website hosting...${NC}"
 az storage blob service-properties update \
     --account-name $STORAGE_ACCOUNT \
+    --account-key "$STORAGE_KEY" \
     --static-website \
     --index-document index.html \
     --404-document error.html
-
-# Create CDN profile
-echo -e "${BLUE}Creating CDN profile...${NC}"
-az cdn profile create \
-    --name $CDN_PROFILE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --sku Standard_Microsoft
-
-# Create CDN endpoint
-echo -e "${BLUE}Creating CDN endpoint...${NC}"
-az cdn endpoint create \
-    --name $CDN_ENDPOINT_NAME \
-    --profile-name $CDN_PROFILE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --origin $(az storage account show -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP --query "primaryEndpoints.web" -o tsv | sed 's/https:\/\///')
-
-# Configure CDN
-echo -e "${BLUE}Configuring CDN...${NC}"
-
-# Set global caching rules
-az cdn endpoint update \
-    --name $CDN_ENDPOINT_NAME \
-    --profile-name $CDN_PROFILE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --query-string-caching-behavior IgnoreQueryString
-
-# Enable compression
-az cdn endpoint update \
-    --name $CDN_ENDPOINT_NAME \
-    --profile-name $CDN_PROFILE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --content-types-to-compress \
-        "text/plain" \
-        "text/html" \
-        "text/css" \
-        "text/javascript" \
-        "application/x-javascript" \
-        "application/javascript" \
-        "application/json" \
-        "application/xml" \
-    --is-compression-enabled true
 
 # Get endpoints
 STORAGE_URL=$(az storage account show \
@@ -88,25 +54,22 @@ STORAGE_URL=$(az storage account show \
     --query "primaryEndpoints.web" \
     --output tsv)
 
-CDN_URL=$(az cdn endpoint show \
-    --name $CDN_ENDPOINT_NAME \
-    --profile-name $CDN_PROFILE_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --query hostName \
-    --output tsv)
-
 # Save configuration
 echo -e "${BLUE}Saving configuration...${NC}"
+mkdir -p ../website
 cat > ../website/.env << EOF
 STORAGE_ACCOUNT=$STORAGE_ACCOUNT
 RESOURCE_GROUP=$RESOURCE_GROUP
-CDN_PROFILE_NAME=$CDN_PROFILE_NAME
-CDN_ENDPOINT_NAME=$CDN_ENDPOINT_NAME
+STORAGE_KEY=$STORAGE_KEY
 STORAGE_URL=$STORAGE_URL
-CDN_URL=$CDN_URL
 EOF
 
 echo -e "${GREEN}Infrastructure deployment complete!${NC}"
 echo -e "${GREEN}Storage Account URL: ${NC}$STORAGE_URL"
-echo -e "${GREEN}CDN Endpoint URL: ${NC}https://$CDN_URL"
 echo -e "${BLUE}Configuration saved to website/.env${NC}"
+
+echo -e "\n${BLUE}Next steps:${NC}"
+echo "1. Deploy your website content:"
+echo "   cd ../website && ./deploy-content.sh"
+echo -e "\n2. Access your website at:"
+echo "   $STORAGE_URL"

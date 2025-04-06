@@ -32,19 +32,9 @@ az storage blob upload-batch \
     --account-key "$STORAGE_KEY" \
     --source . \
     --destination '$web' \
-    --pattern "*" \
+    --pattern "*.html" \
     --content-cache-control "public, max-age=3600" \
-    --exclude-pattern "*.sh" \
-    --exclude-pattern ".env"
-
-# Purge CDN endpoint
-echo -e "${BLUE}Purging CDN cache...${NC}"
-az cdn endpoint purge \
-    --content-paths "/*" \
-    --profile-name $CDN_PROFILE_NAME \
-    --name $CDN_ENDPOINT_NAME \
-    --resource-group $RESOURCE_GROUP
+    --overwrite
 
 echo -e "${GREEN}Content deployment complete!${NC}"
-echo -e "${GREEN}Storage Account URL: ${NC}$STORAGE_URL"
-echo -e "${GREEN}CDN Endpoint URL: ${NC}https://$CDN_URL" 
+echo -e "${GREEN}Your website is now available at: ${NC}$STORAGE_URL" 
