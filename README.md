@@ -1,6 +1,6 @@
-# Static Website Hosting with Azure Storage and CDN
+# Azure Static Website Hosting
 
-This project demonstrates how to host a static website using Azure Storage and Azure CDN for optimal content delivery.
+This project demonstrates how to host a static website using Azure Storage's static website hosting feature.
 
 ## Prerequisites
 
@@ -35,16 +35,37 @@ This project demonstrates how to host a static website using Azure Storage and A
 
 ## Azure Resources Created
 
-- Azure Storage Account (for static website hosting)
-- Azure CDN Profile
-- Azure CDN Endpoint
+- Azure Storage Account (with static website hosting enabled)
+- Secure HTTPS endpoint
+- Custom error pages
 
 ## Documentation
 
 Detailed documentation can be found in the [docs](./docs) directory:
 - [Infrastructure Setup](./docs/infrastructure-setup.md)
 - [Content Deployment](./docs/content-deployment.md)
-- [CDN Configuration](./docs/cdn-configuration.md)
+
+## Features
+
+- Static website hosting using Azure Storage
+- Secure HTTPS access
+- Custom error pages
+- Easy deployment scripts
+- Cost-effective hosting solution
+- Scalable storage platform
+
+## Deployment
+
+The project includes two main deployment scripts:
+
+1. `infrastructure/deploy-infrastructure.sh`: Sets up Azure resources
+2. `website/deploy-content.sh`: Deploys website content
+
+Both scripts include:
+- Clear output with color-coded messages
+- Error handling
+- Configuration management
+- Automatic resource naming
 
 ## Contributing
 
